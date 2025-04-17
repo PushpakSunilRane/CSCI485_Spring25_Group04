@@ -10,7 +10,7 @@ class JobDataCollector:
         load_dotenv()
         self.app_id = os.getenv('ADZUNA_APP_ID')
         self.app_key = os.getenv('ADZUNA_APP_KEY')
-        self.base_url = "https://api.adzuna.com/v1/api/jobs"
+        self.base_url = "https://api.adzuna.com/v1/api/jobs/us/search"
         
     def fetch_jobs(self, job_title=None, location=None, max_results=100):
         """
@@ -39,8 +39,7 @@ class JobDataCollector:
             
             try:
                 # Make the API request
-                url = f"{self.base_url}/us/search"
-                response = requests.get(url, params=params)
+                response = requests.get(self.base_url, params=params)
                 
                 # Check for API errors
                 if response.status_code != 200:
@@ -89,8 +88,7 @@ class JobDataCollector:
             }
             
             try:
-                url = f"{self.base_url}/us/search"
-                response = requests.get(url, params=params)
+                response = requests.get(self.base_url, params=params)
                 
                 if response.status_code != 200:
                     print(f"API Error: {response.status_code}")

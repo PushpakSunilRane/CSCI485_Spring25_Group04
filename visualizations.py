@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import networkx as nx
 import pandas as pd
 import numpy as np
+import streamlit as st
 
 class JobVisualizer:
     def __init__(self, df):
@@ -186,4 +187,81 @@ class JobVisualizer:
             yaxis_title='Average Salary (USD)'
         )
         
-        return fig 
+        return fig
+    
+    def plot_job_trends(self, trends_df):
+        """
+        Plot job posting trends over time
+        """
+        if trends_df.empty:
+            st.info("No trend data available")
+            return
+            
+        fig = px.line(trends_df, x='date', y='count',
+                     title='Job Posting Trends Over Time',
+                     labels={'count': 'Number of Jobs', 'date': 'Date'})
+        fig.update_layout(xaxis_title='Date', yaxis_title='Number of Jobs')
+        st.plotly_chart(fig, use_container_width=True)
+        
+    def plot_top_companies(self, companies_series):
+        """
+        Plot top companies by number of job postings
+        """
+        if companies_series.empty:
+            st.info("No company data available")
+            return
+            
+        fig = px.bar(companies_series, 
+                    title='Top Companies by Number of Job Postings',
+                    labels={'index': 'Company', 'value': 'Number of Jobs'})
+        fig.update_layout(xaxis_title='Company', yaxis_title='Number of Jobs')
+        st.plotly_chart(fig, use_container_width=True)
+        
+    def plot_top_locations(self, locations_series):
+        """
+        Plot top locations by number of job postings
+        """
+        if locations_series.empty:
+            st.info("No location data available")
+            return
+            
+        fig = px.bar(locations_series, 
+                    title='Top Locations by Number of Job Postings',
+                    labels={'index': 'Location', 'value': 'Number of Jobs'})
+        fig.update_layout(xaxis_title='Location', yaxis_title='Number of Jobs')
+        st.plotly_chart(fig, use_container_width=True)
+        
+    def plot_job_types(self, types_series):
+        """
+        Plot distribution of job types
+        """
+        if types_series.empty:
+            st.info("No job type data available")
+            return
+            
+        fig = px.pie(types_series, values=types_series.values, names=types_series.index,
+                    title='Distribution of Job Types')
+        st.plotly_chart(fig, use_container_width=True)
+        
+    def plot_recent_jobs(self, recent_jobs_df):
+        """
+        Plot recent job postings
+        """
+        if recent_jobs_df.empty:
+            st.info("No recent job data available")
+            return
+            
+        # Create a table-like visualization
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=['Title', 'Company', 'Location', 'Type', 'Posted'],
+                       fill_color='paleturquoise',
+                       align='left'),
+            cells=dict(values=[recent_jobs_df['title'], recent_jobs_df['company'],
+                             recent_jobs_df['location'], recent_jobs_df['type'],
+                             recent_jobs_df['created_at'].dt.strftime('%Y-%m-%d')],
+                      fill_color='lavender',
+                      align='left'))
+        ])
+        
+        fig.update_layout(title='Recent Job Postings')
+        st.plotly_chart(fig, use_container_width=True) 

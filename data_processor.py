@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import ast
+from datetime import datetime
 
 class JobDataProcessor:
     def __init__(self, df):
@@ -16,35 +17,19 @@ class JobDataProcessor:
             print("No data to process")
             return self.df
             
-        # Initialize skills column if it doesn't exist
-        if 'skills' not in self.df.columns:
-            self.df['skills'] = [[] for _ in range(len(self.df))]
+        # Convert created_at to datetime
+        if 'created_at' in self.df.columns:
+            self.df['created_at'] = pd.to_datetime(self.df['created_at'])
+            
+        # Fill missing values
+        self.df['type'] = self.df['type'].fillna('Unknown')
+        self.df['location'] = self.df['location'].fillna('Remote')
+        self.df['company'] = self.df['company'].fillna('Unknown Company')
         
-        # Convert skills from string to list if it's a string
-        if len(self.df) > 0 and isinstance(self.df['skills'].iloc[0], str):
-            self.df['skills'] = self.df['skills'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-        
-        # Calculate average salary
-        self.df['avg_salary'] = self.df.apply(
-            lambda x: (x['salary_min'] + x['salary_max']) / 2 
-            if pd.notnull(x['salary_min']) and pd.notnull(x['salary_max']) 
-            else x['salary_min'] if pd.notnull(x['salary_min']) 
-            else x['salary_max'] if pd.notnull(x['salary_max']) 
-            else np.nan, 
-            axis=1
-        )
-        
-        # Create skill count feature
-        self.df['skill_count'] = self.df['skills'].apply(len)
-        
-        # Convert contract type to categorical
-        self.df['contract_type'] = self.df['contract_type'].fillna('Unknown')
-        
-        # Extract year from created date
-        if 'created' in self.df.columns:
-            self.df['year'] = pd.to_datetime(self.df['created']).dt.year
-        else:
-            self.df['year'] = pd.Timestamp.now().year
+        # Extract year and month from created_at
+        if 'created_at' in self.df.columns:
+            self.df['year'] = self.df['created_at'].dt.year
+            self.df['month'] = self.df['created_at'].dt.month
             
         return self.df
     
@@ -154,4 +139,51 @@ class JobDataProcessor:
                 if not pd.isna(avg_salary):
                     salary_by_skill[skill] = avg_salary
                     
-        return pd.Series(salary_by_skill).sort_values(ascending=False) 
+        return pd.Series(salary_by_skill).sort_values(ascending=False)
+    
+    def get_job_trends(self):
+        """
+        Analyze job posting trends over time
+        """
+        if self.df.empty or 'created_at' not in self.df.columns:
+            return pd.DataFrame()
+            
+        # Group by month and count jobs
+        trends = self.df.groupby(['year', 'month']).size().reset_index(name='count')
+        trends['date'] = pd.to_datetime(trends[['year', 'month']].assign(day=1))
+        
+        return trends
+    
+    def get_top_companies(self, n=10):
+        """
+        Get the companies with the most job postings
+        """
+        if self.df.empty:
+            return pd.Series()
+        return self.df['company'].value_counts().head(n)
+    
+    def get_top_locations(self, n=10):
+        """
+        Get the locations with the most job postings
+        """
+        if self.df.empty:
+            return pd.Series()
+        return self.df['location'].value_counts().head(n)
+    
+    def get_job_types_distribution(self):
+        """
+        Get the distribution of job types
+        """
+        if self.df.empty:
+            return pd.Series()
+        return self.df['type'].value_counts()
+    
+    def get_recent_jobs(self, days=7):
+        """
+        Get jobs posted in the last n days
+        """
+        if self.df.empty or 'created_at' not in self.df.columns:
+            return pd.DataFrame()
+            
+        recent_date = pd.Timestamp.now() - pd.Timedelta(days=days)
+        return self.df[self.df['created_at'] >= recent_date] 

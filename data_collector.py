@@ -10,16 +10,64 @@ class JobDataCollector:
         load_dotenv()
         self.app_id = os.getenv('ADZUNA_APP_ID')
         self.app_key = os.getenv('ADZUNA_APP_KEY')
-        self.base_url = "https://api.adzuna.com/v1/api/jobs/us/search"
+        self.base_url = "https://api.adzuna.com/v1/api/jobs/us/search/1"
+        
+        # Verify API credentials
+        if not self.app_id or not self.app_key:
+            print("Error: Missing API credentials. Please check your .env file.")
+            print(f"APP_ID: {'Present' if self.app_id else 'Missing'}")
+            print(f"APP_KEY: {'Present' if self.app_key else 'Missing'}")
+        else:
+            print("API credentials found. Testing connection...")
+            self.test_api_connection()
+        
+    def test_api_connection(self):
+        """Test the API connection with a simple request"""
+        try:
+            params = {
+                'app_id': self.app_id,
+                'app_key': self.app_key,
+                'results_per_page': 1,
+                'page': 1,
+                'what': 'software',
+                'where': 'us'
+            }
+            
+            print(f"\nTesting API connection...")
+            print(f"Request URL: {self.base_url}")
+            print(f"Request Parameters: {params}")
+            
+            response = requests.get(self.base_url, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                print("API connection successful!")
+                print(f"Response status: {response.status_code}")
+                print(f"Number of results: {len(data.get('results', []))}")
+            else:
+                print(f"API Error: {response.status_code}")
+                print(f"Error message: {response.text}")
+                
+        except Exception as e:
+            print(f"Error testing API connection: {str(e)}")
         
     def fetch_jobs(self, job_title=None, location=None, max_results=100):
         """
         Fetch job postings from Adzuna API
         If job_title or location is None, fetch all available jobs
         """
+        if not self.app_id or not self.app_key:
+            print("Error: Missing API credentials. Cannot fetch jobs.")
+            return []
+            
         jobs = []
         page = 1
-        results_per_page = 50
+        results_per_page = min(50, max_results)  # Limit results per page
+        
+        print(f"\nStarting job fetch with parameters:")
+        print(f"Job Title: {job_title}")
+        print(f"Location: {location}")
+        print(f"Max Results: {max_results}")
         
         while len(jobs) < max_results:
             # Format the search parameters
@@ -28,17 +76,14 @@ class JobDataCollector:
                 'app_key': self.app_key,
                 'results_per_page': results_per_page,
                 'page': page,
-                'content-type': 'application/json'
+                'what': job_title if job_title else 'all',
+                'where': location if location else 'us'
             }
             
-            # Add optional parameters
-            if job_title:
-                params['what'] = job_title
-            if location:
-                params['where'] = location
-            
             try:
-                # Make the API request
+                print(f"\nMaking API request to: {self.base_url}")
+                print(f"With parameters: {params}")
+                
                 response = requests.get(self.base_url, params=params)
                 
                 # Check for API errors
@@ -48,9 +93,11 @@ class JobDataCollector:
                     break
                     
                 data = response.json()
+                print(f"API Response: {data}")
                 
                 if not data.get('results'):
-                    print("No more results found")
+                    print("No results found in API response")
+                    print(f"Response data: {data}")
                     break
                     
                 jobs.extend(data['results'])
@@ -67,15 +114,24 @@ class JobDataCollector:
                     print(f"Response text: {e.response.text}")
                 break
                 
+        print(f"\nTotal jobs fetched: {len(jobs)}")
         return jobs[:max_results]
     
     def fetch_jobs_by_category(self, category, max_results=100):
         """
         Fetch jobs by category
         """
+        if not self.app_id or not self.app_key:
+            print("Error: Missing API credentials. Cannot fetch jobs.")
+            return []
+            
         jobs = []
         page = 1
-        results_per_page = 50
+        results_per_page = min(50, max_results)  # Limit results per page
+        
+        print(f"\nStarting category job fetch:")
+        print(f"Category: {category}")
+        print(f"Max Results: {max_results}")
         
         while len(jobs) < max_results:
             params = {
@@ -84,10 +140,13 @@ class JobDataCollector:
                 'category': category,
                 'results_per_page': results_per_page,
                 'page': page,
-                'content-type': 'application/json'
+                'where': 'us'
             }
             
             try:
+                print(f"\nMaking API request to: {self.base_url}")
+                print(f"With parameters: {params}")
+                
                 response = requests.get(self.base_url, params=params)
                 
                 if response.status_code != 200:
@@ -96,9 +155,11 @@ class JobDataCollector:
                     break
                     
                 data = response.json()
+                print(f"API Response: {data}")
                 
                 if not data.get('results'):
-                    print("No more results found")
+                    print("No results found in API response")
+                    print(f"Response data: {data}")
                     break
                     
                 jobs.extend(data['results'])
@@ -114,6 +175,7 @@ class JobDataCollector:
                     print(f"Response text: {e.response.text}")
                 break
                 
+        print(f"\nTotal jobs fetched: {len(jobs)}")
         return jobs[:max_results]
     
     def process_jobs(self, jobs):

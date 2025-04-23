@@ -29,7 +29,7 @@ def main():
     collector = JobDataCollector()
     
     # Sidebar controls
-    st.sidebar.header("Data Collection Options")
+    st.sidebar.header("Search Options")
     
     # Job title selection
     job_title = st.sidebar.text_input("Job Title (Optional)", 
@@ -48,133 +48,103 @@ def main():
                                   [None] + categories,
                                   help="Select a category to filter jobs")
     
-    # Max results selection
-    max_results = st.sidebar.slider("Maximum Results", 50, 1000, 200, 50)
+    # Max results selection - updated range
+    max_results = st.sidebar.slider("Maximum Results", 10, 100, 50, 10)
     
-    # Data collection options
-    fetch_new = st.sidebar.checkbox("Fetch New Data", value=False)
-    use_existing = st.sidebar.checkbox("Use Existing Data", value=True)
-    
-    df = None
-    
-    if fetch_new:
-        st.sidebar.info("Fetching new data may take some time...")
-        
-        # Fetch jobs based on selected options
-        if category:
-            jobs = collector.fetch_jobs_by_category(category, max_results)
-        else:
-            jobs = collector.fetch_jobs(job_title, location, max_results)
-            
-        if not jobs:
-            st.error("No jobs found with the current filters. Please try different options.")
-            return
-            
-        # Process and save the data
-        df = collector.process_jobs(jobs)
-        if df.empty:
-            st.error("No valid job data to process. Please try different options.")
-            return
-            
-        collector.save_data(df)
-        st.success(f"Successfully fetched and processed {len(df)} jobs")
-        
-    elif use_existing:
-        try:
-            df = collector.load_data()
-            if df.empty:
-                st.error("No existing data found. Please enable 'Fetch New Data' to collect job data.")
-                return
-            st.info(f"Loaded {len(df)} existing jobs")
-        except Exception as e:
-            st.error(f"Error loading existing data: {str(e)}")
-            return
-    
-    # Filter data based on selections if not fetching new data
-    if not fetch_new and df is not None:
-        if job_title:
-            df = df[df['title'].str.contains(job_title, case=False, na=False)]
-        if location:
-            df = df[df['location'].str.contains(location, case=False, na=False)]
-        if category:
-            df = df[df['category'].str.contains(category, case=False, na=False)]
-            
-        if df.empty:
-            st.error("No jobs match the selected filters. Please try different options.")
-            return
-            
-    # Initialize processor and visualizer with the DataFrame
-    if df is not None:
-        processor = JobDataProcessor(df)
-        visualizer = JobVisualizer(df)
-        
-        # Display metrics
-        st.header("Job Market Overview")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Total Jobs", len(df))
-        with col2:
-            avg_salary = df['salary_min'].mean()
-            st.metric("Average Salary", f"${avg_salary:,.2f}" if not pd.isna(avg_salary) else "N/A")
-        with col3:
-            unique_companies = df['company'].nunique()
-            st.metric("Unique Companies", unique_companies)
-        
-        # Display job categories
-        st.subheader("Job Categories")
-        category_counts = df['category'].value_counts()
-        if not category_counts.empty:
-            st.bar_chart(category_counts)
-        else:
-            st.info("No category data available")
-        
-        # Display locations
-        st.subheader("Job Locations")
-        location_counts = df['location'].value_counts().head(10)
-        if not location_counts.empty:
-            st.bar_chart(location_counts)
-        else:
-            st.info("No location data available")
-        
-        # Process data for visualizations
-        try:
-            # Clean and prepare data
-            df = processor.clean_data()
-            
-            # Create skill matrix
-            skill_matrix = processor.create_skill_matrix()
-            if not skill_matrix.empty:
-                # Display top skills
-                st.subheader("Top Required Skills")
-                top_skills = processor.get_top_skills()
-                st.bar_chart(top_skills)
+    # Search button
+    if st.sidebar.button("Search Jobs"):
+        with st.spinner("Fetching job data..."):
+            try:
+                # Fetch jobs based on selected options
+                if category:
+                    jobs = collector.fetch_jobs_by_category(category, max_results)
+                else:
+                    jobs = collector.fetch_jobs(job_title, location, max_results)
+                    
+                if not jobs:
+                    st.error("No jobs found with the current filters. Please try different options.")
+                    return
+                    
+                # Process the data
+                df = collector.process_jobs(jobs)
+                if df.empty:
+                    st.error("No valid job data to process. Please try different options.")
+                    return
+                    
+                # Initialize processor and visualizer with the DataFrame
+                processor = JobDataProcessor(df)
+                visualizer = JobVisualizer(df)
                 
-                # Display skill relationships
-                st.subheader("Skill Relationships")
-                skill_relationships = processor.analyze_skill_relationships()
-                visualizer.plot_skill_network(skill_relationships)
+                # Display metrics
+                st.header("Job Market Overview")
+                col1, col2, col3 = st.columns(3)
                 
-                # Display salary by skill
-                st.subheader("Average Salary by Skill")
-                salary_by_skill = processor.analyze_salary_by_skill()
-                visualizer.plot_salary_by_skill(salary_by_skill)
-            else:
-                st.info("No skill data available for analysis")
+                with col1:
+                    st.metric("Total Jobs", len(df))
+                with col2:
+                    avg_salary = df['salary_min'].mean()
+                    st.metric("Average Salary", f"${avg_salary:,.2f}" if not pd.isna(avg_salary) else "N/A")
+                with col3:
+                    unique_companies = df['company'].nunique()
+                    st.metric("Unique Companies", unique_companies)
                 
-            # Cluster jobs
-            clusters = processor.cluster_jobs()
-            if clusters is not None:
-                st.subheader("Job Clusters")
-                cluster_summary = processor.get_cluster_summary()
-                visualizer.plot_clusters(cluster_summary)
-            else:
-                st.info("No clustering data available")
+                # Display job categories
+                st.subheader("Job Categories")
+                category_counts = df['category'].value_counts()
+                if not category_counts.empty:
+                    st.bar_chart(category_counts)
+                else:
+                    st.info("No category data available")
                 
-        except Exception as e:
-            st.error(f"Error processing data: {str(e)}")
+                # Display locations
+                st.subheader("Job Locations")
+                location_counts = df['location'].value_counts().head(10)
+                if not location_counts.empty:
+                    st.bar_chart(location_counts)
+                else:
+                    st.info("No location data available")
+                
+                # Process data for visualizations
+                try:
+                    # Clean and prepare data
+                    df = processor.clean_data()
+                    
+                    # Create skill matrix
+                    skill_matrix = processor.create_skill_matrix()
+                    if not skill_matrix.empty:
+                        # Display top skills
+                        st.subheader("Top Required Skills")
+                        top_skills = processor.get_top_skills()
+                        st.bar_chart(top_skills)
+                        
+                        # Display skill relationships
+                        st.subheader("Skill Relationships")
+                        skill_relationships = processor.analyze_skill_relationships()
+                        visualizer.plot_skill_network(skill_relationships)
+                        
+                        # Display salary by skill
+                        st.subheader("Average Salary by Skill")
+                        salary_by_skill = processor.analyze_salary_by_skill()
+                        visualizer.plot_salary_by_skill(salary_by_skill)
+                    else:
+                        st.info("No skill data available for analysis")
+                        
+                    # Cluster jobs
+                    clusters = processor.cluster_jobs()
+                    if clusters is not None:
+                        st.subheader("Job Clusters")
+                        cluster_summary = processor.get_cluster_summary()
+                        visualizer.plot_clusters(cluster_summary)
+                    else:
+                        st.info("No clustering data available")
+                        
+                except Exception as e:
+                    st.error(f"Error processing data: {str(e)}")
+                    
+            except Exception as e:
+                st.error(f"Error fetching data: {str(e)}")
     else:
-        st.info("Please fetch job data using the controls in the sidebar.")
+        st.info("Please use the sidebar to set your search criteria and click 'Search Jobs' to begin.")
 
 if __name__ == "__main__":
     main() 

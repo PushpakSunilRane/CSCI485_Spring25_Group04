@@ -77,3 +77,57 @@ Feel free to submit issues and enhancement requests!
 - SerpAPI
 - Adzuna API
 - USAJobs API
+
+# GitHub Jobs Dashboard
+
+A dashboard application that searches for job postings in GitHub repositories using the GitHub API.
+
+## Setup
+
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Create a `.env` file in the root directory with your GitHub token:
+   ```
+   GITHUB_TOKEN=your_github_token_here
+   ```
+   To get a GitHub token:
+   - Go to GitHub.com and log in
+   - Go to Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Generate a new token with the `repo` scope
+   - Copy the token and paste it in the `.env` file
+
+## Usage
+
+1. Run the dashboard:
+   ```bash
+   streamlit run dashboard.py
+   ```
+2. Use the sidebar to:
+   - Enter a job title to search for
+   - Optionally specify a location
+   - Choose maximum number of results
+3. Click 'Search Jobs' to start the search
+4. View results in the main panel:
+   - Expandable job listings with details
+   - Analytics charts showing job distribution
+   - Option to save results to CSV
+
+## Features
+
+- Search GitHub repositories for job postings
+- Filter by job title and location
+- Interactive dashboard with Streamlit
+- Data visualization with Plotly
+- Export results to CSV
+- Rate limit handling
+- Flexible job information extraction
+
+## Files
+
+- `data_collector.py`: Core job data collection logic
+- `dashboard.py`: Streamlit dashboard interface
+- `requirements.txt`: Project dependencies
+- `.env`: GitHub API token configuration

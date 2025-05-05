@@ -1,133 +1,105 @@
-# FINAL PROJECT
-
-# MATH-485 : ADVANCED DATA SCIENCE 
-
 # JOB MARKET ANALYSIS
 
-# Job Market Analysis Dashboard
+# Job Market Analytics Dashboard
 
-A Streamlit-based dashboard for analyzing job market trends using the GitHub Jobs API.
-
-## Features
-
-- Real-time job data fetching from GitHub Jobs API
-- Interactive job search by title and location
-- Visualizations of job market trends
-- Analysis of top companies and locations
-- Job type distribution analysis
-- Recent job postings tracking
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
-
-2. Install the required packages:
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-1. Run the Streamlit app:
-```bash
-streamlit run app.py
-```
-
-2. Use the sidebar to:
-   - Enter job title (optional)
-   - Enter location (optional)
-   - Set maximum number of results
-   - Click "Search Jobs" to fetch and analyze data
-
-3. View the dashboard to see:
-   - Job market overview metrics
-   - Job posting trends
-   - Top companies and locations
-   - Job type distribution
-   - Recent job listings
-
-## Data Sources
-
-This project uses the [GitHub Jobs API](https://jobs.github.com/api) to fetch job data. The API is free to use and provides job listings from various companies that post on GitHub Jobs.
-
-## Project Structure
-
-- `app.py`: Main Streamlit application
-- `data_collector.py`: Handles data fetching from GitHub Jobs API
-- `data_processor.py`: Processes and analyzes job data
-- `visualizations.py`: Creates interactive visualizations
-- `requirements.txt`: Lists required Python packages
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## Technologies Used
-
-- Python
-- Streamlit
-- Scikit-learn
-- NetworkX
-- Pandas
-- Plotly
-- SerpAPI
-- Adzuna API
-- USAJobs API
-
-# GitHub Jobs Dashboard
-
-A dashboard application that searches for job postings in GitHub repositories using the GitHub API.
-
-## Setup
-
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Create a `.env` file in the root directory with your GitHub token:
-   ```
-   GITHUB_TOKEN=your_github_token_here
-   ```
-   To get a GitHub token:
-   - Go to GitHub.com and log in
-   - Go to Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Generate a new token with the `repo` scope
-   - Copy the token and paste it in the `.env` file
-
-## Usage
-
-1. Run the dashboard:
-   ```bash
-   streamlit run dashboard.py
-   ```
-2. Use the sidebar to:
-   - Enter a job title to search for
-   - Optionally specify a location
-   - Choose maximum number of results
-3. Click 'Search Jobs' to start the search
-4. View results in the main panel:
-   - Expandable job listings with details
-   - Analytics charts showing job distribution
-   - Option to save results to CSV
+A real-time job market analytics dashboard that provides insights into job postings, skills, and market trends using the Adzuna API.
 
 ## Features
 
-- Search GitHub repositories for job postings
-- Filter by job title and location
-- Interactive dashboard with Streamlit
-- Data visualization with Plotly
-- Export results to CSV
-- Rate limit handling
-- Flexible job information extraction
+- 🔍 Real-time job search across multiple countries
+- 📊 Interactive visualizations of job market data
+- 💰 Salary analysis and filtering
+- 🎯 Skills analysis and demand tracking
+- 📈 Market trends and company insights
+- 📥 Export functionality for job listings
 
-## Files
+## Prerequisites
 
-- `data_collector.py`: Core job data collection logic
-- `dashboard.py`: Streamlit dashboard interface
-- `requirements.txt`: Project dependencies
-- `.env`: GitHub API token configuration
+Before you begin, ensure you have the following:
+- Python 3.8 or higher installed
+- A valid Adzuna API account (get your API credentials from [Adzuna API](https://developer.adzuna.com/))
+- Basic understanding of Python and data analysis
+
+2. Using the Dashboard:
+   - Enter a job title in the search box
+   - Optionally select a country from the dropdown
+   - Adjust the maximum number of results if needed
+   - Click "Search Jobs" to fetch results
+   - Use the salary filter to narrow down results
+   - Explore different tabs for various insights
+
+## Dashboard Sections
+
+### 1. Job Listings
+- View detailed job postings
+- See company information
+- Access job descriptions and requirements
+- Get direct links to apply
+
+### 2. Skills Analysis
+- View most in-demand skills
+- Analyze salary distributions by location
+- Understand skill requirements
+
+### 3. Market Trends
+- Track job posting trends over time
+- View job type distribution
+- Analyze market patterns
+
+### 4. Company Insights
+- Discover top companies by job postings
+- View top locations
+- Analyze company distribution
+
+## Features in Detail
+
+### Search Functionality
+- Search by job title
+- Filter by country
+- Adjust maximum results
+- Real-time data fetching
+
+### Salary Analysis
+- Filter jobs by salary range
+- View average salaries by location
+- Compare salary distributions
+
+### Data Export
+- Download job listings as CSV
+- Export filtered results
+- Save analysis data
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. API Connection Error
+   - Check your API credentials in `.env`
+   - Verify internet connection
+   - Ensure API keys are valid
+
+2. No Results Found
+   - Try different job titles
+   - Check country selection
+   - Adjust search criteria
+
+3. Salary Filter Not Working
+   - Some jobs may not have salary information
+   - Try adjusting the salary range
+   - Check if valid salary data exists
+
+
+## Future Improvements
+
+- Add more advanced filtering options
+- Implement job application tracking
+- Add more visualization types
+- Include job market predictions
+- Add user authentication
+
+## Resources
+
+- [Streamlit Documentation](https://docs.streamlit.io/)
+- [Adzuna API Documentation](https://developer.adzuna.com/)
+- [Plotly Documentation](https://plotly.com/python/)
+- [Python Documentation](https://docs.python.org/)

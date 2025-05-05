@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-import ast
 from datetime import datetime
+import re
 
 class JobDataProcessor:
     def __init__(self, df):
@@ -17,7 +17,7 @@ class JobDataProcessor:
             print("No data to process")
             return self.df
             
-        # Convert created_at to datetime
+        # Convert created_at to datetime if it exists
         if 'created_at' in self.df.columns:
             self.df['created_at'] = pd.to_datetime(self.df['created_at'])
             
@@ -26,18 +26,58 @@ class JobDataProcessor:
         self.df['location'] = self.df['location'].fillna('Remote')
         self.df['company'] = self.df['company'].fillna('Unknown Company')
         
-        # Extract year and month from created_at
+        # Extract year and month from created_at if it exists
         if 'created_at' in self.df.columns:
             self.df['year'] = self.df['created_at'].dt.year
             self.df['month'] = self.df['created_at'].dt.month
             
+        # Clean salary data
+        if 'salary_min' in self.df.columns and 'salary_max' in self.df.columns:
+            self.df['salary_min'] = pd.to_numeric(self.df['salary_min'], errors='coerce')
+            self.df['salary_max'] = pd.to_numeric(self.df['salary_max'], errors='coerce')
+            self.df['avg_salary'] = (self.df['salary_min'] + self.df['salary_max']) / 2
+            
+        # Extract skills from job description
+        if 'description' in self.df.columns:
+            self.df['skills'] = self.df['description'].apply(self._extract_skills)
+            self.df['skill_count'] = self.df['skills'].apply(len)
+            
         return self.df
+    
+    def _extract_skills(self, description):
+        """
+        Extract skills from job description using common programming languages and technologies
+        """
+        if pd.isna(description):
+            return []
+            
+        # Common programming languages and technologies
+        skills = [
+            'Python', 'Java', 'JavaScript', 'C++', 'C#', 'Ruby', 'PHP', 'Swift',
+            'Kotlin', 'Go', 'Rust', 'TypeScript', 'SQL', 'NoSQL', 'MongoDB',
+            'PostgreSQL', 'MySQL', 'Oracle', 'AWS', 'Azure', 'GCP', 'Docker',
+            'Kubernetes', 'React', 'Angular', 'Vue', 'Node.js', 'Django', 'Flask',
+            'Spring', 'Express', 'TensorFlow', 'PyTorch', 'Machine Learning',
+            'Artificial Intelligence', 'Data Science', 'Big Data', 'Hadoop',
+            'Spark', 'Kafka', 'Redis', 'Elasticsearch', 'Git', 'CI/CD', 'DevOps'
+        ]
+        
+        # Convert description to string and lowercase
+        desc = str(description).lower()
+        
+        # Find matching skills
+        found_skills = []
+        for skill in skills:
+            if skill.lower() in desc:
+                found_skills.append(skill)
+                
+        return found_skills
     
     def create_skill_matrix(self):
         """
         Create a matrix of job postings vs skills
         """
-        if self.df.empty:
+        if self.df.empty or 'skills' not in self.df.columns:
             return pd.DataFrame()
             
         # Get unique skills
@@ -104,7 +144,7 @@ class JobDataProcessor:
         cluster_summary = self.df.groupby('cluster').agg({
             'avg_salary': ['mean', 'std', 'count'],
             'skill_count': ['mean', 'std'],
-            'contract_type': lambda x: x.mode()[0] if not x.mode().empty else 'Unknown'
+            'type': lambda x: x.mode()[0] if not x.mode().empty else 'Unknown'
         }).round(2)
         
         return cluster_summary

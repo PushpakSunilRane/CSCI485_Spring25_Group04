@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import requests
 import os
 from datetime import datetime, timedelta
-#from dotenv import load_dotenv
+from dotenv import load_dotenv
 from data_processor import JobDataProcessor
 import random
 

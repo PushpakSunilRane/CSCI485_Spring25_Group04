@@ -65,6 +65,11 @@ if 'jobs' not in st.session_state:
     st.session_state.processor = None
     st.session_state.current_color_scheme = get_random_color_scheme()
     st.session_state.search_triggered = False
+    st.session_state.search_params = {
+        'job_title': '',
+        'country': 'us',
+        'max_results': 10
+    }
 
 def fetch_jobs(job_title="", country="us", max_results=20):
     """Fetch jobs from Adzuna API"""
@@ -150,29 +155,41 @@ st.title("Job Market Analytics Dashboard")
 st.sidebar.header("Job Search")
 
 # Search functionality
-job_title = st.sidebar.text_input("Job Title", "")
-country = st.sidebar.selectbox("Select Country (Optional)", [''] + list(ADZUNA_COUNTRIES.keys()), format_func=lambda x: ADZUNA_COUNTRIES.get(x, 'All Countries'))
-max_results = st.sidebar.slider("Maximum Results", 5, 100, 10)
+job_title = st.sidebar.text_input("Job Title", st.session_state.search_params['job_title'])
+country = st.sidebar.selectbox("Select Country (Optional)", [''] + list(ADZUNA_COUNTRIES.keys()), 
+                              format_func=lambda x: ADZUNA_COUNTRIES.get(x, 'All Countries'),
+                              index=0 if st.session_state.search_params['country'] == 'us' else 
+                              list(ADZUNA_COUNTRIES.keys()).index(st.session_state.search_params['country']))
+max_results = st.sidebar.slider("Maximum Results", 5, 100, st.session_state.search_params['max_results'])
+
+def perform_search(job_title, country, max_results):
+    """Perform the job search with given parameters"""
+    with st.spinner("Fetching jobs..."):
+        # Use 'us' as default if no country selected
+        selected_country = country if country else 'us'
+        jobs = fetch_jobs(job_title=job_title, country=selected_country, max_results=max_results)
+        
+        if jobs:
+            # Process jobs into DataFrame
+            st.session_state.jobs = process_jobs(jobs)
+            st.session_state.processor = JobDataProcessor(st.session_state.jobs)
+            st.session_state.jobs = st.session_state.processor.clean_data()
+            st.session_state.search_triggered = True
+            st.session_state.search_params = {
+                'job_title': job_title,
+                'country': selected_country,
+                'max_results': max_results
+            }
+        else:
+            st.error("No jobs found. Try adjusting your search criteria.")
+            st.session_state.search_triggered = False
 
 # Search button
 if st.sidebar.button("Search Jobs"):
     if not job_title:
         st.error("Please enter a job title to search for")
     else:
-        with st.spinner("Fetching jobs..."):
-            # Use 'us' as default if no country selected
-            selected_country = country if country else 'us'
-            jobs = fetch_jobs(job_title=job_title, country=selected_country, max_results=max_results)
-            
-            if jobs:
-                # Process jobs into DataFrame
-                st.session_state.jobs = process_jobs(jobs)
-                st.session_state.processor = JobDataProcessor(st.session_state.jobs)
-                st.session_state.jobs = st.session_state.processor.clean_data()
-                st.session_state.search_triggered = True
-            else:
-                st.error("No jobs found. Try adjusting your search criteria.")
-                st.session_state.search_triggered = False
+        perform_search(job_title, country, max_results)
 
 # Only show results if search was triggered
 if st.session_state.search_triggered and not st.session_state.jobs.empty:
@@ -218,7 +235,7 @@ if st.session_state.search_triggered and not st.session_state.jobs.empty:
         st.error("Error applying salary filter")
 
     # Main content
-    st.subheader(f"Found {len(filtered_df)} jobs for {job_title} in {ADZUNA_COUNTRIES[selected_country]}")
+    st.subheader(f"Found {len(filtered_df)} jobs for {job_title} in {ADZUNA_COUNTRIES[st.session_state.search_params['country']]}")
 
     # Create tabs for different views
     tab1, tab2, tab3, tab4 = st.tabs(["Job Listings", "Skills Analysis", "Market Trends", "Company Insights"])

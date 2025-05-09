@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import requests
 import os
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from data_processor import JobDataProcessor
 import random
 
@@ -148,7 +148,7 @@ st.sidebar.header("Search & Filters")
 # Search functionality
 job_title = st.sidebar.text_input("Job Title", "")
 country = st.sidebar.selectbox("Select Country (Optional)", [''] + list(ADZUNA_COUNTRIES.keys()), format_func=lambda x: ADZUNA_COUNTRIES.get(x, 'All Countries'))
-max_results = st.sidebar.slider("Maximum Results", 10, 100, 20)
+max_results = st.sidebar.slider("Maximum Results", 5, 100, 10)
 
 # Search button
 if st.sidebar.button("Search Jobs"):
@@ -212,7 +212,7 @@ if not st.session_state.jobs.empty:
         st.error("Error applying salary filter")
 
     # Main content
-    st.subheader(f"Found {len(filtered_df)} jobs for '{job_title}'")
+    st.subheader(f"Found {len(filtered_df)} jobs for {job_title} in {ADZUNA_COUNTRIES[selected_country]}")
 
     # Create tabs for different views
     tab1, tab2, tab3, tab4 = st.tabs(["Job Listings", "Skills Analysis", "Market Trends", "Company Insights"])
@@ -263,34 +263,140 @@ if not st.session_state.jobs.empty:
 
     with tab3:
         # Market trends
-        col1, col2 = st.columns(2)
+        st.subheader("Market Trends Analysis")
+        
+        # Create three columns for different trend visualizations
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            # Job posting trends
+            # Job posting trends with moving average
             trends = st.session_state.processor.get_job_trends()
             if not trends.empty:
-                fig = px.line(
-                    trends,
-                    x='date',
-                    y='count',
+                # Calculate 7-day moving average
+                trends['moving_avg'] = trends['count'].rolling(window=7, min_periods=1).mean()
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=trends['date'],
+                    y=trends['count'],
+                    name='Daily Postings',
+                    mode='lines+markers',
+                    line=dict(color=st.session_state.current_color_scheme[0])
+                ))
+                fig.add_trace(go.Scatter(
+                    x=trends['date'],
+                    y=trends['moving_avg'],
+                    name='7-Day Moving Average',
+                    mode='lines',
+                    line=dict(color=st.session_state.current_color_scheme[1], dash='dash')
+                ))
+                fig.update_layout(
                     title="Job Posting Trends Over Time",
-                    color_discrete_sequence=st.session_state.current_color_scheme
+                    template='plotly_white',
+                    xaxis_title="Date",
+                    yaxis_title="Number of Postings",
+                    showlegend=True
                 )
-                fig.update_layout(template='plotly_white')
                 st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            # Job type distribution
+            # Salary trends over time
+            if 'salary_min' in filtered_df.columns and 'salary_max' in filtered_df.columns:
+                salary_trends = filtered_df.copy()
+                salary_trends['created_at'] = pd.to_datetime(salary_trends['created_at'])
+                salary_trends['avg_salary'] = (salary_trends['salary_min'] + salary_trends['salary_max']) / 2
+                salary_trends = salary_trends.groupby(salary_trends['created_at'].dt.date)['avg_salary'].mean().reset_index()
+                
+                fig = px.line(
+                    salary_trends,
+                    x='created_at',
+                    y='avg_salary',
+                    title="Average Salary Trends Over Time",
+                    color_discrete_sequence=st.session_state.current_color_scheme
+                )
+                fig.update_layout(
+                    template='plotly_white',
+                    xaxis_title="Date",
+                    yaxis_title="Average Salary (USD)",
+                    showlegend=False
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col3:
+            # Job type distribution with enhanced labels
             type_dist = st.session_state.processor.get_job_types_distribution()
             if not type_dist.empty:
+                # Clean and standardize job type labels
+                type_dist.index = type_dist.index.str.replace('_', ' ').str.title()
+                type_dist = type_dist.sort_values(ascending=False)
+                
                 fig = px.pie(
                     values=type_dist.values,
                     names=type_dist.index,
                     title="Job Type Distribution",
                     color_discrete_sequence=st.session_state.current_color_scheme
                 )
-                fig.update_layout(template='plotly_white')
+                fig.update_layout(
+                    template='plotly_white',
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.2,
+                        xanchor="center",
+                        x=0.5
+                    )
+                )
                 st.plotly_chart(fig, use_container_width=True)
+        
+        # Additional market insights
+        st.subheader("Additional Market Insights")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Top growing skills
+            skills_trend = st.session_state.processor.get_skills_trend()
+            if not skills_trend.empty:
+                fig = px.bar(
+                    skills_trend.head(10),
+                    x='growth_rate',
+                    y='skill',
+                    orientation='h',
+                    title="Top Growing Skills",
+                    color='growth_rate',
+                    color_continuous_scale=st.session_state.current_color_scheme
+                )
+                fig.update_layout(
+                    template='plotly_white',
+                    xaxis_title="Growth Rate (%)",
+                    yaxis_title="Skill"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Location-based salary comparison
+            location_salary = filtered_df.groupby('location').agg({
+                'salary_min': 'mean',
+                'salary_max': 'mean'
+            }).reset_index()
+            location_salary['avg_salary'] = (location_salary['salary_min'] + location_salary['salary_max']) / 2
+            location_salary = location_salary.sort_values('avg_salary', ascending=False).head(10)
+            
+            fig = px.bar(
+                location_salary,
+                x='avg_salary',
+                y='location',
+                orientation='h',
+                title="Top 10 Highest Paying Locations",
+                color='avg_salary',
+                color_continuous_scale=st.session_state.current_color_scheme
+            )
+            fig.update_layout(
+                template='plotly_white',
+                xaxis_title="Average Salary (USD)",
+                yaxis_title="Location"
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
     with tab4:
         # Company insights

@@ -226,4 +226,62 @@ class JobDataProcessor:
             return pd.DataFrame()
             
         recent_date = pd.Timestamp.now() - pd.Timedelta(days=days)
-        return self.df[self.df['created_at'] >= recent_date] 
+        return self.df[self.df['created_at'] >= recent_date]
+
+    def get_skills_trend(self):
+        """
+        Calculate growth rate of skills over time
+        Returns a DataFrame with skills and their growth rates
+        """
+        if self.df.empty or 'created_at' not in self.df.columns or 'skills' not in self.df.columns:
+            return pd.DataFrame()
+
+        # Convert created_at to datetime if not already
+        self.df['created_at'] = pd.to_datetime(self.df['created_at'])
+        
+        # Get the midpoint date to split data into two periods
+        midpoint = self.df['created_at'].median()
+        
+        # Split data into two periods
+        first_period = self.df[self.df['created_at'] < midpoint]
+        second_period = self.df[self.df['created_at'] >= midpoint]
+        
+        # Calculate skill frequencies for each period
+        first_period_skills = {}
+        second_period_skills = {}
+        
+        # Process first period
+        for skills in first_period['skills']:
+            for skill in skills:
+                first_period_skills[skill] = first_period_skills.get(skill, 0) + 1
+        
+        # Process second period
+        for skills in second_period['skills']:
+            for skill in skills:
+                second_period_skills[skill] = second_period_skills.get(skill, 0) + 1
+        
+        # Calculate growth rates
+        growth_rates = []
+        for skill in set(first_period_skills.keys()) | set(second_period_skills.keys()):
+            first_count = first_period_skills.get(skill, 0)
+            second_count = second_period_skills.get(skill, 0)
+            
+            # Calculate growth rate (percentage change)
+            if first_count > 0:
+                growth_rate = ((second_count - first_count) / first_count) * 100
+            else:
+                growth_rate = 100 if second_count > 0 else 0
+                
+            growth_rates.append({
+                'skill': skill,
+                'growth_rate': growth_rate,
+                'first_period_count': first_count,
+                'second_period_count': second_count
+            })
+        
+        # Convert to DataFrame and sort by growth rate
+        growth_df = pd.DataFrame(growth_rates)
+        if not growth_df.empty:
+            growth_df = growth_df.sort_values('growth_rate', ascending=False)
+        
+        return growth_df 

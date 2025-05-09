@@ -5,16 +5,17 @@ import plotly.graph_objects as go
 import requests
 import os
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+import streamlit as st
+#from dotenv import load_dotenv
 from data_processor import JobDataProcessor
 import random
 
 # Load environment variables
-load_dotenv()
+#load_dotenv()
 
 # Adzuna API configuration
-ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
-ADZUNA_APP_KEY = os.getenv('ADZUNA_APP_KEY')
+ADZUNA_APP_ID = st.secrets['ADZUNA_APP_ID']
+ADZUNA_APP_KEY = st.secrets['ADZUNA_APP_KEY']
 ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs/us/search/1"
 
 # Available countries for Adzuna API

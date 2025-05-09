@@ -72,27 +72,41 @@ if 'jobs' not in st.session_state:
     }
 
 def fetch_jobs(job_title="", country="us", max_results=20):
-    """Fetch jobs from Adzuna API"""
+    """Fetch jobs from Adzuna API with pagination support"""
     try:
-        # Update base URL with selected country
-        base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+        all_results = []
+        page = 1
         
-        params = {
-            'app_id': ADZUNA_APP_ID,
-            'app_key': ADZUNA_APP_KEY,
-            'results_per_page': max_results,
-            'what': job_title,
-            'content-type': 'application/json'
-        }
+        while len(all_results) < max_results:
+            # Update base URL with selected country and page number
+            base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/{page}"
+            
+            params = {
+                'app_id': ADZUNA_APP_ID,
+                'app_key': ADZUNA_APP_KEY,
+                'results_per_page': min(50, max_results - len(all_results)),  # Adzuna max per page is 50
+                'what': job_title,
+                'content-type': 'application/json'
+            }
+            
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            if 'results' in data and data['results']:
+                all_results.extend(data['results'])
+                page += 1
+                
+                # Check if we've reached the end of available results
+                if len(data['results']) < params['results_per_page']:
+                    break
+            else:
+                break
         
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()
-        
-        data = response.json()
-        if 'results' in data:
+        if all_results:
             # Update color scheme when new search is performed
             st.session_state.current_color_scheme = get_random_color_scheme()
-            return data['results']
+            return all_results[:max_results]  # Ensure we don't return more than requested
         return []
     except Exception as e:
         st.error(f"Error fetching jobs: {str(e)}")

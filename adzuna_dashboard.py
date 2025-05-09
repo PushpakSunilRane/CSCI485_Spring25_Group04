@@ -174,7 +174,7 @@ country = st.sidebar.selectbox("Select Country (Optional)", [''] + list(ADZUNA_C
                               format_func=lambda x: ADZUNA_COUNTRIES.get(x, 'All Countries'),
                               index=0 if st.session_state.search_params['country'] == 'us' else 
                               list(ADZUNA_COUNTRIES.keys()).index(st.session_state.search_params['country']))
-max_results = st.sidebar.slider("Maximum Results", 5, 100, st.session_state.search_params['max_results'])
+max_results = st.sidebar.slider("Maximum Results", 5, 500, st.session_state.search_params['max_results'])
 
 def perform_search(job_title, country, max_results):
     """Perform the job search with given parameters"""

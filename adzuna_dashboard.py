@@ -146,7 +146,7 @@ def create_salary_by_location_plot(df):
 st.title("Job Market Analytics Dashboard")
 
 # Sidebar filters
-st.sidebar.header("Search & Filters")
+st.sidebar.header("Job Search")
 
 # Search functionality
 job_title = st.sidebar.text_input("Job Title", "")

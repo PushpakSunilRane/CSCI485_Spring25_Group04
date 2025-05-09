@@ -64,6 +64,7 @@ if 'jobs' not in st.session_state:
     st.session_state.jobs = pd.DataFrame()
     st.session_state.processor = None
     st.session_state.current_color_scheme = get_random_color_scheme()
+    st.session_state.search_triggered = False
 
 def fetch_jobs(job_title="", country="us", max_results=20):
     """Fetch jobs from Adzuna API"""
@@ -168,11 +169,13 @@ if st.sidebar.button("Search Jobs"):
                 st.session_state.jobs = process_jobs(jobs)
                 st.session_state.processor = JobDataProcessor(st.session_state.jobs)
                 st.session_state.jobs = st.session_state.processor.clean_data()
+                st.session_state.search_triggered = True
             else:
                 st.error("No jobs found. Try adjusting your search criteria.")
+                st.session_state.search_triggered = False
 
-# Salary range filter
-if not st.session_state.jobs.empty:
+# Only show results if search was triggered
+if st.session_state.search_triggered and not st.session_state.jobs.empty:
     st.sidebar.subheader("Salary Filter")
     
     try:
@@ -201,8 +204,8 @@ if not st.session_state.jobs.empty:
     except Exception as e:
         st.sidebar.error("Error processing salary data")
 
-# Apply salary filter
-if not st.session_state.jobs.empty:
+# Apply salary filter and show results only if search was triggered
+if st.session_state.search_triggered and not st.session_state.jobs.empty:
     filtered_df = st.session_state.jobs.copy()
     
     try:

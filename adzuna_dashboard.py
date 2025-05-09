@@ -14,8 +14,6 @@ import random
 if "ADZUNA_APP_ID" in st.secrets:
     ADZUNA_APP_ID = st.secrets["ADZUNA_APP_ID"]
     ADZUNA_APP_KEY = st.secrets["ADZUNA_APP_KEY"]
-else:
-    st.error("ADZUNA_APP_ID & ADZUNA_APP_KEY is missing in secrets!")
 
 # Adzuna API configuration
 ADZUNA_APP_ID = st.secrets["ADZUNA_APP_ID"]
